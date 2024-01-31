@@ -1,0 +1,337 @@
+--create tables (UPDATED TO BCNF)
+CREATE TABLE customer (
+    CustomerID NUMBER,
+    CustomerName VARCHAR2(25) NOT NULL,
+    CustomerEmail VARCHAR2(35) NOT NULL UNIQUE,
+    CustomerPhone VARCHAR2(12) DEFAULT NULL,
+    CustomerDOB DATE NOT NULL,
+    CustomerAddress VARCHAR2(25),
+    PRIMARY KEY (CustomerID)
+);
+
+CREATE TABLE member (
+    CustomerID NUMBER,
+    Points NUMBER DEFAULT 0,
+    MemberDate DATE NOT NULL,
+    MemberType VARCHAR2(8) DEFAULT 'Standard' CHECK (MemberType = 'Standard' OR MemberType = 'Premium'),
+    MemberID NUMBER NOT NULL,
+    PRIMARY KEY (CustomerID),
+    FOREIGN KEY (CustomerID) REFERENCES customer
+);
+
+CREATE TABLE game (
+    GameID NUMBER,
+    GameTitle VARCHAR2(25) NOT NULL,
+    Publisher VARCHAR2(25) NOT NULL,
+    Genre VARCHAR2(25) NOT NULL,
+    Platform VARCHAR2(25) NOT NULL,
+    CopiesSold NUMBER NOT NULL,
+    ReleaseDate DATE,
+    Price DECIMAL(4,2) NOT NULL,
+    PRIMARY KEY (GameID)
+);
+
+CREATE TABLE inventory (
+    ItemID NUMBER,
+    GameID NUMBER NOT NULL,
+    ItemAvailable CHAR DEFAULT 'Y',
+    ItemType VARCHAR2(10) NOT NULL,
+    Supplier VARCHAR2(25) NOT NULL,
+    Quantity NUMBER NOT NULL,
+    PRIMARY KEY (ItemID),
+    FOREIGN KEY (GameID) REFERENCES game(GameID)
+);
+
+CREATE TABLE order_detail (
+    OrderID NUMBER,
+    CustomerID NUMBER NOT NULL,
+    OrderType VARCHAR2(8) NOT NULL,
+    OrderDate DATE NOT NULL,
+    ShipID NUMBER NOT NULL UNIQUE,
+    PRIMARY KEY (OrderID),
+    FOREIGN KEY (CustomerID) REFERENCES customer(CustomerID)
+);
+
+CREATE TABLE order_shipment (
+    ShipID NUMBER,
+    ShipDate DATE NOT NULL,
+    Fulfillment CHAR DEFAULT 'N' NOT NULL,
+    Tracking NUMBER UNIQUE,
+    PRIMARY KEY (ShipID),
+    FOREIGN KEY (ShipID) REFERENCES order_detail(ShipID)
+);
+
+CREATE TABLE order_item (
+    OrderID NUMBER NOT NULL,
+    ItemID NUMBER NOT NULL,
+    OrderQuantity NUMBER NOT NULL,
+    Cost DECIMAL(4,2) NOT NULL,
+    FOREIGN KEY (OrderID) REFERENCES order_detail(OrderID),
+    FOREIGN KEY (ItemID) REFERENCES inventory(ItemID)
+);
+
+CREATE TABLE payment (
+    OrderID NUMBER,
+    PayStatus VARCHAR2(10) DEFAULT 'Unpaid',
+    PayDate DATE,
+    Total DECIMAL(4,2) NOT NULL,
+    Points NUMBER DEFAULT 0,
+    PRIMARY KEY (OrderID),
+    FOREIGN KEY (OrderID) REFERENCES order_detail(OrderID)
+);
+
+CREATE TABLE refund (
+    RefundID NUMBER,
+    OrderID NUMBER NOT NULL UNIQUE,
+    RefundAmount DECIMAL(4,2) NOT NULL,
+    RefundDate DATE,
+    PRIMARY KEY (RefundID),
+    FOREIGN KEY (OrderID) REFERENCES order_detail(OrderID)
+);
+
+CREATE TABLE review (
+    ReviewID NUMBER,
+    CustomerID NUMBER NOT NULL,
+    GameID NUMBER NOT NULL,
+    Rating NUMBER CHECK (Rating BETWEEN 1 and 5),
+    ReviewDate DATE NOT NULL,
+    PRIMARY KEY (ReviewID),
+    FOREIGN KEY (CustomerID) REFERENCES customer(CustomerID),
+    FOREIGN KEY (GameID) REFERENCES game(GameID)
+);
+
+CREATE TABLE promotion (
+    PromoID NUMBER,
+    GameID NUMBER NOT NULL,
+    DiscountAmount NUMBER NOT NULL,
+    DiscountPrice NUMBER NOT NULL,
+    PromoStatus VARCHAR2(10) NOT NULL,
+    EndDate DATE NOT NULL,
+    PRIMARY KEY (PromoID),
+    FOREIGN KEY (GameID) REFERENCES game(GameID)
+);
+
+CREATE TABLE employee (
+    EmployeeID NUMBER,
+    EmployeeName VARCHAR2(25) NOT NULL,
+    PRIMARY KEY (EmployeeID)
+);
+
+CREATE TABLE manager (
+    ManagerID NUMBER,
+    EmployeeID NUMBER,
+    Department VARCHAR2(25) NOT NULL,
+    PRIMARY KEY (ManagerID, EmployeeID),
+    FOREIGN KEY (EmployeeID) REFERENCES employee(EmployeeID)
+);
+
+--data insertion
+INSERT INTO customer VALUES (1, 'Grace Lee', 'g11lee@ryerson.ca', '6477777777', '1998-05-06', '123 Quest Lane');
+INSERT INTO customer (CustomerID, CustomerName, CustomerEmail, CustomerDOB, CustomerAddress) VALUES (2, 'Anna Mae', 'anm95@gmail.org', '1995-10-28', '588 Spadina Avenue');
+INSERT INTO customer VALUES (3, 'Andy Lin', 'yu2.lin@cps510.ca', '6471282321', '2002-03-17', '2 Challenger Drive');
+INSERT INTO member VALUES (1, 250, '2022-01-30', 'Standard', 5200);
+INSERT INTO member VALUES (3, 580, '2022-03-15', 'Premium', 5201);
+INSERT INTO order_detail VALUES (10, 3, 'Physical', '2022-09-18', '2022-09-21', 'Y', 529308);
+INSERT INTO order_detail (OrderID, CustomerID, OrderType, OrderDate, Fulfillment) VALUES (11, 1, 'Digital', '2023-07-01', 'N');
+INSERT INTO order_detail (OrderID, CustomerID, OrderType, OrderDate) VALUES (12, 1, 'Digital', '2023-09-04');
+INSERT INTO order_detail (OrderID, CustomerID, OrderType, OrderDate, ShipDate, Fulfillment) VALUES (13, 1, 'Physical', '2024-03-14', '2024-10-30', 'Y');
+INSERT INTO payment VALUES (10, 'Paid', '2022-09-27', 45.2, 40);
+INSERT INTO payment (OrderID, PayStatus, Total) VALUES (11, 'Unpaid', 83.9);
+INSERT INTO payment VALUES (12, 'Paid', '2023-09-06', 56.32, 50);
+INSERT INTO refund VALUES (3842, 10, 45.2, '2020-06-29');
+INSERT INTO refund VALUES (1234, 11, 66.3, '2018-11-05');
+INSERT INTO game VALUES (100, 'Fallout: New Vegas', 'Bethesda Softworks', 'RPG', 'XBox', 535, '2010-10-19');
+INSERT INTO game VALUES (101, 'Dark Souls Remastered', 'FromSoftware', 'RPG', 'PS4', 437, '2018-05-24');
+INSERT INTO game VALUES (102, 'Yakuza 0', 'SEGA', 'RPG', 'PS4', 282, '2015-03-12');
+INSERT INTO game VALUES (103, 'Titanfall 2', 'Respawn Entertainment', 'RPG', 'Xbox', 698, '2016-08-16');
+INSERT INTO game VALUES (104, 'Armored Core VI', 'FromSoftware', 'RPG', 'PS4', 158, '2023-08-25');
+INSERT INTO inventory VALUES (1000, 100, 'N', 'Physical', 'MCD Supplies', 0);
+INSERT INTO inventory VALUES (1001, 101, 'Y', 'Physical', 'Games Plus', 278);
+INSERT INTO inventory VALUES (1002, 102, 'Y', 'Digital', 'Games Plus', 823);
+INSERT INTO inventory VALUES (1003, 103, 'Y', 'Physical', 'MCD Supplies', 52);
+INSERT INTO inventory VALUES (1004, 104, 'Y', 'Physical', 'Games Plus', 483);
+INSERT INTO order_item VALUES (10, 1000, 1, 40);
+INSERT INTO order_item VALUES (11, 1002, 1, 30);
+INSERT INTO review VALUES (1, 1, 100, 5, '2021-12-25');
+INSERT INTO review VALUES (2, 2, 100, 2, '2023-01-25');
+INSERT INTO review VALUES (3, 1, 101, 4, '2022-12-25');
+INSERT INTO promotion VALUES (1, 100, 25, 15, 'Inactive', '2023-07-30', '2023-08-24');
+INSERT INTO promotion VALUES (2, 101, 30, 23, 'Active', '2023-09-20', '2023-09-30');
+INSERT INTO employee VALUES (120, 'Tarik Celik');
+INSERT INTO employee VALUES (121, 'Tigesh Zhou');
+INSERT INTO employee VALUES (122, 'Jane Doe');
+INSERT INTO manager VALUES (121, 'Logistics');
+INSERT INTO manager VALUES (122, 'Shipment');
+
+
+--queries
+
+UPDATE customer 
+SET CustomerAddress = '47 Ranch Drive'
+WHERE CustomerID = 2;
+
+DELETE FROM manager 
+WHERE EmployeeID = 122;
+
+SELECT 'Non members', CustomerName 
+FROM customer c 
+WHERE NOT EXISTS 
+  (SELECT * 
+  FROM member m 
+  WHERE c.CustomerID = m.CustomerID);
+
+SELECT game.GameID, GameTitle 
+FROM game, inventory 
+WHERE inventory.ItemType = 'Physical'
+  AND inventory.GameID = game.GameID 
+ORDER BY GameID ASC;
+
+SELECT 'In Stock', GameID, ItemType 
+FROM inventory 
+WHERE Quantity > 0;
+
+SELECT * 
+FROM review 
+WHERE Rating >= 3 
+ORDER BY GameID ASC, Rating DESC;
+
+SELECT promotion.* 
+FROM promotion, inventory 
+WHERE inventory.Quantity <> 0 
+  AND promotion.GameID = inventory.GameID;
+
+SELECT DISTINCT Publisher AS PS4_Publishers 
+FROM game 
+WHERE Platform = 'PS4' 
+ORDER BY Publisher;
+
+SELECT DISTINCT Supplier AS Suppliers_2023 
+FROM inventory 
+WHERE EXISTS 
+  (SELECT ReleaseDate 
+  FROM game 
+  WHERE ReleaseDate >= DATE '2023-01-01')
+ORDER BY Supplier ASC;
+
+SELECT PayStatus, COUNT(OrderID) AS "# OF ORDERS"
+FROM payment 
+GROUP BY PayStatus;
+
+SELECT DISTINCT CustomerID, Fulfillment, ShipDate AS Orders_Fulfilled 
+FROM order_detail 
+WHERE Fulfillment = 'Y' 
+ORDER BY ShipDate ASC;
+
+SELECT MemberType, MAX(Points), Count(CustomerID)
+FROM member 
+GROUP BY MemberType;
+
+SELECT Department, EmployeeName 
+FROM manager, employee 
+WHERE manager.EmployeeID = employee.EmployeeID 
+ORDER BY EmployeeName ASC;
+
+SELECT order_item.ItemID, OrderQuantity, UnitPrice 
+FROM order_item, inventory 
+WHERE order_item.ItemID = inventory.ItemID 
+ORDER BY OrderQuantity ASC;
+
+SELECT g.GameTitle,
+    (SELECT AVG(r.Rating)
+     FROM review r
+     WHERE r.GameID = g.GameID) AS AverageRating
+FROM game g
+ORDER BY AverageRating ASC;
+
+SELECT g.GameTitle, i.Supplier
+FROM inventory i, game g
+WHERE g.GameID = i.GameID
+ORDER BY i.Supplier;
+
+SELECT m.CustomerID, m.MemberType, od.OrderType, p.Points
+FROM member m, order_detail od, payment p
+WHERE m.CustomerID = od.CustomerID
+    AND od.OrderID = p.OrderID
+    AND p.Points > 0
+    AND od.OrderType = 'Digital';
+
+A4 part 2----------------------------------------------------------------------------------------------------------------------------------
+
+SELECT m.CustomerID, m.MemberType, od.OrderType, p.Points
+FROM member m, order_detail od, payment p
+WHERE m.CustomerID = od.CustomerID
+	AND od.OrderID = p.OrderID
+	AND p.Points > 0
+	AND od.OrderType = 'Digital';
+
+SELECT game.GameID, GameTitle
+FROM game, inventory
+WHERE inventory.ItemType = 'Physical'
+	AND inventory.GameID = game.GameID
+ORDER BY GameID ASC;
+
+SELECT customer.CustomerID, customer.CustomerName, member.MemberID 
+FROM customer
+LEFT JOIN member 
+ON customer.CustomerID = member.CustomerID;
+
+SELECT order_detail.OrderID, game.GameID, game.GameTitle 
+FROM order_detail
+INNER JOIN order_item 
+ON order_detail.OrderID = order_item.OrderID 
+INNER JOIN inventory 
+ON order_item.ItemID = inventory.ItemID 
+INNER JOIN game 
+ON game.GameID = inventory.GameID 
+ORDER BY order_detail.OrderID ASC;
+
+SELECT c.CustomerName, g.GameTitle, pr.DiscountAmount, od.OrderDate
+FROM customer c
+JOIN order_detail od ON c.CustomerID = od.CustomerID
+JOIN order_item oi ON od.OrderID = oi.OrderID
+JOIN inventory i ON oi.ItemID = i.ItemID
+JOIN game g ON i.GameID = g.GameID
+LEFT JOIN promotion pr ON g.GameID = pr.GameID;
+
+SELECT c.CustomerName, g.GameTitle, r.RefundAmount, r.RefundDate
+FROM game g
+JOIN inventory i ON g.GameID = i.GameID
+JOIN order_item oi ON i.ItemID = oi.ItemID
+JOIN order_detail od ON oi.OrderID = od.OrderID
+JOIN refund r ON od.OrderID = r.OrderID
+JOIN customer c ON od.CustomerID = c.CustomerID;
+
+SELECT customer.CustomerName, payment.PayStatus, payment.Total, order_item.OrderQuantity
+FROM game
+INNER JOIN inventory
+ON inventory.GameID = game.GameID
+JOIN order_item
+ON order_item.ItemID = inventory.ItemID
+JOIN payment
+ON order_item.OrderID = payment.OrderID
+JOIN order_detail
+ON order_detail.OrderID = payment.OrderID
+JOIN customer
+ON customer.CustomerID = order_detail.CustomerID
+ORDER BY payment.Total DESC;
+
+CREATE VIEW available_games(GameID, GameTitle, Quantity) AS 
+	(SELECT g.GameID, g.GameTitle, i.Quantity 
+FROM game g, inventory i 
+WHERE i.ItemAvailable = 'Y' AND i.GameID = g.GameID);
+  
+CREATE VIEW customer_orders(CustomerID, CustomerName, CustomerEmail, OrderID, Total, PayStatus, OrderDate) AS
+    (SELECT c.CustomerID, c.CustomerName, c.CustomerEmail, od.OrderID, p.Total, p.PayStatus, od.OrderDate
+    FROM customer c, order_detail od, payment p
+    WHERE c.CustomerID = od.CustomerID AND od.OrderID = p.OrderID);
+    
+CREATE VIEW active_promotions(GameID, GameTitle, PromoID, DiscountAmount, DiscountPrice, EndDate) AS
+    (SELECT g.GameID, g.GameTitle, p.PromoID, p.DiscountAmount, p.DiscountPrice, p.EndDate
+    FROM promotion p, game g
+    WHERE PromoStatus = 'Active' AND p.GameID = g.GameID);
+    
+CREATE VIEW five_star_reviews(GameID, GameTitle, ReviewDate, Rating) AS
+    (SELECT g.GameID, g.GameTitle, r.ReviewDate, r.Rating
+    FROM game g, review r
+    WHERE Rating = 5 AND r.GameID = g.GameID);
+    
